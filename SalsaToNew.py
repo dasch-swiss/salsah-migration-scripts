@@ -357,7 +357,6 @@ class Converter:
                                     for splits in firstSplit:
                                         finalSplit.append(splits.split("="))
 
-
                                     for numEle in range(len(finalSplit)): #  instead of the list id, insert the name of the list via the id .replace("selection", "hlist")
 
                                         if (finalSplit[numEle][0] == "selection" or finalSplit[numEle][0] == "hlist"):  # here the selections-id's are comvertet into the name
@@ -375,12 +374,14 @@ class Converter:
                                         tmpOnto["project"]["ontologies"][0]["properties"][-1]["gui_attributes"].update({
                                             finalSplit[numEle][0]: finalSplit[numEle][1]
                                         })
-                                tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = objectMap[property["vt_name"]]  # fill in object
 
-                                if objectMap[property["vt_name"]] is not superMap:  # fill in the super of the property. Default is "hasValue"
-                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"].append("hasValue")
-                                else:
-                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"].append(superMap[objectMap[property["vt_name"]]])
+                                if "vt_name" in property and property["vt_name"] in objectMap:
+                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = objectMap[property["vt_name"]]  # fill in object
+
+                                    if objectMap[property["vt_name"]] in superMap:  # fill in the super of the property. Default is "hasValue"
+                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"].append(superMap[objectMap[property["vt_name"]]])
+                                    else:
+                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"].append("hasValue")
 
 
     # ==================================================================================================================
