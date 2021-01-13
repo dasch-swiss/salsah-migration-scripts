@@ -37,7 +37,7 @@ class Converter:
     # ==================================================================================================================
     # Fill in the project id's to the corrisponging projects. Using https://raw.githubusercontent.com/dhlab-basel/dasch-ark-resolver-data/master/data/shortcodes.csv
     def fillId(self, project):
-        lines = salsahJson.r.text.split('\r\n')
+        lines = salsahJson.r.text.split('\n')
         for line in lines:
             parts = line.split(',')
             if len(parts) > 1 and parts[1] == project["shortname"]:
