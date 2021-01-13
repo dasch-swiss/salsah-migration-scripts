@@ -323,7 +323,7 @@ class Converter:
                             # Fill in the name of the property as well as getting the framework done
                             tmpOnto["project"]["ontologies"][0]["properties"].append({
                                 "name": "",
-                                "super": "",
+                                "super": [],
                                 "object": "",
                                 "labels": {},
                                 "gui_element": "",
@@ -378,9 +378,9 @@ class Converter:
                                 tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = objectMap[property["vt_name"]]  # fill in object
 
                                 if objectMap[property["vt_name"]] is not superMap:  # fill in the super of the property. Default is "hasValue"
-                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"] = "hasValue"
+                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"].append("hasValue")
                                 else:
-                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"] = superMap[objectMap[property["vt_name"]]]
+                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"].append(superMap[objectMap[property["vt_name"]]])
 
 
     # ==================================================================================================================
