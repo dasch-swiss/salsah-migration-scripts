@@ -382,6 +382,13 @@ class Converter:
 
                                             finalSplit[numEle][0] = "hlist"
 
+                                        # convert gui attribute's string values to integers where necessary
+                                        if (finalSplit[numEle][0] == "size" or finalSplit[numEle][0] == "maxlength" or finalSplit[numEle][0] == "numprops" or finalSplit[numEle][0] == "cols" or finalSplit[numEle][0] == "rows" or finalSplit[numEle][0] == "min" or finalSplit[numEle][0] == "max"):
+                                            try:
+                                                finalSplit[numEle][1] = int(finalSplit[numEle][1])
+                                            except ValueError:
+                                                finalSplit[numEle][1] = finalSplit[numEle][1]
+
                                         # fill in gui attributes (incl. hlists)
                                         tmpOnto["project"]["ontologies"][0]["properties"][-1]["gui_attributes"].update({
                                             finalSplit[numEle][0]: finalSplit[numEle][1]
