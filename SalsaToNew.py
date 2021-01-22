@@ -382,10 +382,11 @@ class Converter:
 
                                             finalSplit[numEle][0] = "hlist"
 
-                                    for numEle in range(len(finalSplit)):
+                                        # fill in gui attributes (incl. hlists)
                                         tmpOnto["project"]["ontologies"][0]["properties"][-1]["gui_attributes"].update({
                                             finalSplit[numEle][0]: finalSplit[numEle][1]
                                         })
+
                                 tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = objectMap[property["vt_name"]]  # fill in object
 
                                 if tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] == "LinkValue":  # Determening ressource type of LinkValue (Bugfix)
