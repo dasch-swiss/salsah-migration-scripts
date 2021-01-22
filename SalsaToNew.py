@@ -230,7 +230,8 @@ class Converter:
                             for descriptionId in propertyId["description"]:
                                 tmpOnto["project"]["ontologies"][0]["resources"][-1]["cardinalities"][-1][
                                     "comments"].update({
-                                    detect(descriptionId["description"]): descriptionId["description"]
+                                    descriptionId["shortname"]: descriptionId["description"]
+                                    # detect(descriptionId["description"]): descriptionId["description"] # Old Version that uses the detectLanguagePackage
                                 })
             else:
                 continue
