@@ -314,6 +314,19 @@ class Converter:
 
                 controlList.clear()  # The list needs to be cleared for every project
 
+
+                #---------------------
+                
+                myResTypeInfo = {}
+                for momResId in resourcetypes["resourcetypes"]:
+                    req = requests.get(
+                        'https://salsah.org/api/resourcetypes/{}?lang=all'.format(momResId["id"]))
+                    resType = req.json()
+                    myResTypeInfo[momResId["id"]] = resType["restype_info"]
+
+
+                #---------------------
+
                 for momResId in resourcetypes["resourcetypes"]:
                     for propertiesId in momResId["properties"]:
                         # for labelId in propertiesId["label"]: - If you want for every language a single property
@@ -374,14 +387,30 @@ class Converter:
                                         tmpOnto["project"]["ontologies"][0]["properties"][-1]["gui_attributes"].update({
                                             finalSplit[numEle][0]: finalSplit[numEle][1]
                                         })
+                                tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = objectMap[property["vt_name"]]  # fill in object
 
-                                if "vt_name" in property and property["vt_name"] in objectMap:
-                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = objectMap[property["vt_name"]]  # fill in object
+                                if tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] == "LinkValue":  # Determening ressource type of LinkValue (Bugfix)
+                                    kappa = ""
+                                    if property["attributes"] is not None:
+                                        attributes = property["attributes"].split(";")
+                                        for attribute in attributes:
+                                            kv = attribute.split("=")
+                                            if kv[0] == "restypeid":
+                                                kappa = kv[1]
 
-                                    if objectMap[property["vt_name"]] in superMap:  # fill in the super of the property. Default is "hasValue"
-                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"].append(superMap[objectMap[property["vt_name"]]])
+
+                                    if kappa == "":
+                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = "** FILL IN BY HAND **"
+                                    elif kappa not in myResTypeInfo:
+                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = "** FILL IN BY HAND (restypeid=0) **"
+
                                     else:
-                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"].append("hasValue")
+                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = myResTypeInfo[kappa]["name"]
+
+                                if objectMap[property["vt_name"]] is not superMap:  # fill in the super of the property. Default is "hasValue"
+                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"] = "hasValue"
+                                else:
+                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"] = superMap[objectMap[property["vt_name"]]]
 
 
     # ==================================================================================================================
