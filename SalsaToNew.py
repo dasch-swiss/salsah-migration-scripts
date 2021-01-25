@@ -216,22 +216,12 @@ class Converter:
 
                     tmpOnto["project"]["ontologies"][0]["resources"][-1]["super"] = superMap[resTypeInfo["class"]] # Fill in the super of the ressource
 
-
-
                     for propertyId in resTypeInfo["properties"]:
                         tmpOnto["project"]["ontologies"][0]["resources"][-1]["cardinalities"].append({
                             "propname": propertyId["name"],
                             # "gui_order": "",  # TODO gui_order not yet implemented by knora.
-                            "comments": {},
-                            "cardinality": propertyId["occurrence"]
+                            "cardinality": str(propertyId["occurrence"])
                         })
-                        # Fill in the descriptions
-                        if propertyId["description"] is not None and isinstance(propertyId["description"], list):
-                            for descriptionId in propertyId["description"]:
-                                tmpOnto["project"]["ontologies"][0]["resources"][-1]["cardinalities"][-1][
-                                    "comments"].update({
-                                    detect(descriptionId["description"]): descriptionId["description"]
-                                })
             else:
                 continue
 
@@ -339,6 +329,7 @@ class Converter:
                                 "super": [],
                                 "object": "",
                                 "labels": {},
+                                "comments": {},
                                 "gui_element": "",
                                 "gui_attributes": {}
                             })
@@ -362,6 +353,14 @@ class Converter:
 
                         for property in resTypeInfo["properties"]:
                             if "id" in property and property["id"] == propId:
+                                # fill in the description of the properties as comments
+                                if property["description"] is not None and isinstance(property["description"], list):
+                                     for descriptionId in property["description"]:
+                                         tmpOnto["project"]["ontologies"][0]["properties"][-1]["comments"].update({
+                                             descriptionId["shortname"]: descriptionId["description"]
+                                         })
+
+                                # fill in gui_element
                                 tmpOnto["project"]["ontologies"][0]["properties"][-1]["gui_element"] = guiEleMap[property["gui_name"]] # fill in gui_element
                                 if "attributes" in property and property["attributes"] != "" and property["attributes"] is not None:  # fill in all gui_attributes
                                     finalSplit = []
@@ -383,10 +382,18 @@ class Converter:
 
                                             finalSplit[numEle][0] = "hlist"
 
-                                    for numEle in range(len(finalSplit)):
+                                        # convert gui attribute's string values to integers where necessary
+                                        if (finalSplit[numEle][0] == "size" or finalSplit[numEle][0] == "maxlength" or finalSplit[numEle][0] == "numprops" or finalSplit[numEle][0] == "cols" or finalSplit[numEle][0] == "rows" or finalSplit[numEle][0] == "min" or finalSplit[numEle][0] == "max"):
+                                            try:
+                                                finalSplit[numEle][1] = int(finalSplit[numEle][1])
+                                            except ValueError:
+                                                finalSplit[numEle][1] = finalSplit[numEle][1]
+
+                                        # fill in gui attributes (incl. hlists)
                                         tmpOnto["project"]["ontologies"][0]["properties"][-1]["gui_attributes"].update({
                                             finalSplit[numEle][0]: finalSplit[numEle][1]
                                         })
+
                                 tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = objectMap[property["vt_name"]]  # fill in object
 
                                 if tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] == "LinkValue":  # Determening ressource type of LinkValue (Bugfix)
