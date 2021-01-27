@@ -334,6 +334,7 @@ class Converter:
                                 "gui_attributes": {}
                             })
                             tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = propertiesId["label"][0]["label"]
+
                             controlList.append(propertiesId["label"][0]["label"])
 
                             # Fill in the labels of the properties - Its all the different language-names of the property
@@ -390,9 +391,15 @@ class Converter:
                                                 finalSplit[numEle][1] = finalSplit[numEle][1]
 
                                         # fill in gui attributes (incl. hlists)
-                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["gui_attributes"].update({
-                                            finalSplit[numEle][0]: finalSplit[numEle][1]
-                                        })
+                                        if finalSplit[numEle][0] == "size" and not isinstance(finalSplit[numEle][1], int) and '%' in finalSplit[numEle][1]:
+                                            tmpOnto["project"]["ontologies"][0]["properties"][-1][
+                                                "gui_attributes"].update({
+                                                finalSplit[numEle][0]: 250
+                                            })
+                                        else:
+                                            tmpOnto["project"]["ontologies"][0]["properties"][-1]["gui_attributes"].update({
+                                                finalSplit[numEle][0]: finalSplit[numEle][1]
+                                            })
 
                                 tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = objectMap[property["vt_name"]]  # fill in object
 
