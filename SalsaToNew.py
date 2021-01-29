@@ -308,10 +308,16 @@ class Converter:
                 #---------------------
                 
                 myResTypeInfo = {}
+                propertiesName = {} #  This dict will have the form: {PropertyId: Name of Prop}
                 for momResId in resourcetypes["resourcetypes"]:
                     req = requests.get(
                         'https://salsah.org/api/resourcetypes/{}?lang=all'.format(momResId["id"]))
                     resType = req.json()
+
+                    for propId in resType["restype_info"]["properties"]:
+                        if "id" in propId:
+                            propertiesName[propId["id"]] = propId["name"]
+
                     myResTypeInfo[momResId["id"]] = resType["restype_info"]
 
 
@@ -320,7 +326,7 @@ class Converter:
                 for momResId in resourcetypes["resourcetypes"]:
                     for propertiesId in momResId["properties"]:
                         # for labelId in propertiesId["label"]: - If you want for every language a single property
-                        if propertiesId["label"][0]["label"] in controlList:
+                        if propertiesId["id"] in controlList:
                             continue
                         else:
                             # Fill in the name of the property as well as getting the framework done
@@ -333,9 +339,13 @@ class Converter:
                                 "gui_element": "",
                                 "gui_attributes": {}
                             })
-                            tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = propertiesId["label"][0]["label"]
+                            for tempId in propertiesName:
+                                if propertiesId["id"] == tempId:
+                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = propertiesName[tempId]
+                                    #pprint(tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"])
+                                    # tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = propertiesId["label"][0]["label"] - Old Version issue 11
 
-                            controlList.append(propertiesId["label"][0]["label"])
+                            controlList.append(propertiesId["id"])
 
                             # Fill in the labels of the properties - Its all the different language-names of the property
                             for labelId in propertiesId["label"]:
