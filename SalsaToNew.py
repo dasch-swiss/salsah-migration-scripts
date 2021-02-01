@@ -11,6 +11,8 @@ import time
 class Converter:
 
     def __init__(self):
+        self.serverpath: str = "https://www.salsah.org"
+        #self.serverpath: str = "http://salsahv1.unil.ch"
         self.selection_mapping: Dict[str, str] = {}
         self.selection_node_mapping: Dict[str, str] = {}
         self.hlist_node_mapping: Dict[str, str] = {}
@@ -18,10 +20,10 @@ class Converter:
 
 
         # Retrieving the necessary informations from Webpages.
-        self.salsahJson = requests.get('https://www.salsah.org/api/projects').json()
+        self.salsahJson = requests.get(f'{self.serverpath}/api/projects').json()
         self.r = requests.get(
             'https://raw.githubusercontent.com/dhlab-basel/dasch-ark-resolver-data/master/data/shortcodes.csv')
-        self.salsahVocabularies = requests.get('https://www.salsah.org/api/vocabularies').json()
+        self.salsahVocabularies = requests.get(f'{self.serverpath}/api/vocabularies').json()
 
         # Testing stuff
         # self.req = requests.get('https://www.salsah.org/api/resourcetypes/')
@@ -65,16 +67,17 @@ class Converter:
         for vocabularies in salsahJson.salsahVocabularies["vocabularies"]:
             if vocabularies["project_id"] == projects["id"]:
 
-                req = requests.get('https://www.salsah.org/api/projects/{}?lang=all'.format(vocabularies["shortname"]))
+                req = requests.get(f'{self.serverpath}/api/projects/{vocabularies["shortname"]}?lang=all')
 
                 result = req.json()
                 if 'project_info' in result.keys():
                     project_info = result['project_info']
-                    if project_info['keywords'] is not None:
-                        tmpOnto["project"]["keywords"] = list(
-                            map(lambda a: a.strip(), project_info['keywords'].split(',')))
-                    else:
-                        tmpOnto["project"]["keywords"] = [result['project_info']['shortname']]
+                    if "keywords" in project_info: #  This is needed for DYLAN since not all have a keyword TODO: check if that is correct
+                        if project_info['keywords'] is not None:
+                            tmpOnto["project"]["keywords"] = list(
+                                map(lambda a: a.strip(), project_info['keywords'].split(',')))
+                        else:
+                            tmpOnto["project"]["keywords"] = [result['project_info']['shortname']]
                 else:
                     continue
 
@@ -87,7 +90,7 @@ class Converter:
                     'vocabulary': vocabularies["shortname"],
                     'lang': 'all'
                 }
-                req = requests.get('http://salsah.org/api/selections/', params=payload)
+                req = requests.get(f'{self.serverpath}/api/selections/', params=payload)
                 result = req.json()
 
                 selections = result['selections']
@@ -105,7 +108,7 @@ class Converter:
                         root['comments'] = dict(
                             map(lambda a: (a['shortname'], a['description']), selection['description']))
                     payload = {'lang': 'all'}
-                    req_nodes = requests.get('http://salsah.org/api/selections/' + selection['id'], params=payload)
+                    req_nodes = requests.get(f'{self.serverpath}/api/selections/' + selection['id'], params=payload)
                     result_nodes = req_nodes.json()
 
                     self.selection_node_mapping.update(
@@ -126,7 +129,7 @@ class Converter:
                     'vocabulary': vocabularies["shortname"],
                     'lang': 'all'
                 }
-                req = requests.get('http://salsah.org/api/hlists', params=payload)
+                req = requests.get(f'{self.serverpath}/api/hlists', params=payload)
                 result = req.json()
 
                 self.hlist_node_mapping.update(dict(map(lambda a: (a['id'], a['name']), result['hlists'])))
@@ -162,7 +165,7 @@ class Converter:
                         root['comments'] = dict(
                             map(lambda a: (a['shortname'], a['description']), hlist['description']))
                     payload = {'lang': 'all'}
-                    req_nodes = requests.get('http://salsah.org/api/hlists/' + hlist['id'], params=payload)
+                    req_nodes = requests.get(f'{self.serverpath}/api/hlists/' + hlist['id'], params=payload)
                     result_nodes = req_nodes.json()
 
                     root['nodes'] = process_children(result_nodes['hlist'])
@@ -189,7 +192,7 @@ class Converter:
                     'vocabulary': vocabularies["shortname"],
                     'lang': 'all'
                 }
-                req = requests.get('http://salsah.org/api/resourcetypes/', params=payload)
+                req = requests.get(f'{self.serverpath}/api/resourcetypes/', params=payload)
                 resourcetypes = req.json()
 
 
@@ -206,7 +209,7 @@ class Converter:
                         tmpOnto["project"]["ontologies"][0]["resources"][-1]["labels"].update(
                             {label["shortname"]: label["label"]})
                     # Here we fill in the cardinalities
-                    req = requests.get('https://salsah.org/api/resourcetypes/{}?lang=all'.format(momResId["id"]))
+                    req = requests.get(f'{self.serverpath}/api/resourcetypes/{momResId["id"]}?lang=all')
                     resType = req.json()
                     resTypeInfo = resType["restype_info"]
 
@@ -224,6 +227,10 @@ class Converter:
                         })
             else:
                 continue
+
+    # ==================================================================================================================
+    # The following functions are helper functions for "fetchProperties"
+    
 
     # ==================================================================================================================
     def fetchProperties(self, project):
@@ -284,11 +291,11 @@ class Converter:
 
         hlist_node_mapping = {}
 
-        req = requests.get('http://salsah.org/api/selections/')
+        req = requests.get(f'{self.serverpath}/api/selections/')
         result = req.json()
         selections = result["selections"]
 
-        req2 = requests.get('http://salsah.org/api/hlists/')
+        req2 = requests.get(f'{self.serverpath}/api/hlists/')
         result2 = req2.json()
         hlists = result2["hlists"]
 
@@ -299,11 +306,10 @@ class Converter:
                     'vocabulary': vocabularies["shortname"],
                     'lang': 'all'
                 }
-                req = requests.get('http://salsah.org/api/resourcetypes/', params=payload)
+                req = requests.get(f'{self.serverpath}/api/resourcetypes/', params=payload)
                 resourcetypes = req.json()
 
                 controlList.clear()  # The list needs to be cleared for every project
-
 
                 #---------------------
                 
@@ -311,7 +317,7 @@ class Converter:
                 propertiesName = {} #  This dict will have the form: {PropertyId: Name of Prop}
                 for momResId in resourcetypes["resourcetypes"]:
                     req = requests.get(
-                        'https://salsah.org/api/resourcetypes/{}?lang=all'.format(momResId["id"]))
+                        f'{self.serverpath}/api/resourcetypes/{momResId["id"]}?lang=all')
                     resType = req.json()
 
                     for propId in resType["restype_info"]["properties"]:
@@ -354,11 +360,11 @@ class Converter:
                                 })
                         # finding property name plus its id in order to fill in guiname
                         for labelId in propertiesId["label"]:
-                            if labelId["label"] == tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"]:
+                            if labelId["label"] == propertiesId["label"][0]["label"]:
                                 propId = propertiesId["id"]
 
                         req = requests.get(
-                            'https://salsah.org/api/resourcetypes/{}?lang=all'.format(momResId["id"]))
+                            f'{self.serverpath}/api/resourcetypes/{momResId["id"]}?lang=all')
                         resType = req.json()
                         resTypeInfo = resType["restype_info"]
 
