@@ -229,6 +229,82 @@ class Converter:
 
     # ==================================================================================================================
     # The following functions are helper functions for "fetchProperties"
+    # ==================================================================================================================
+    # Function that returns all the resource id's of a project.
+    # It gets the json file of the resources of the current project as parameter.
+    def res_ids(self, resource_types_json):
+        project_resources_ids = []
+
+        for resource_type_id in resource_types_json["resourcetypes"]:
+            project_resources_ids.append(resource_type_id["id"])
+
+        return project_resources_ids
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that returns a List of all the properties id's that are used in that project
+    # It gets the json file of the resources of the current project as parameter.
+    def prop_ids(self, resource_types_json):
+        all_project_properties_ids = []
+
+        for resource_type_id in resource_types_json["resourcetypes"]:
+            for property in resource_type_id:
+                if property["id"] not in all_project_properties_ids:
+                    all_project_properties_ids.append(property["id"])
+                else:
+                    continue
+
+        return all_project_properties_ids
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that returns the json of a given property-id. Used in almost all the subsequent functions as parameter
+    # Gets the id of the property as parameter
+    def prop_json(self, prop_id):
+        req = requests.get(f'{self.serverpath}/api/resourcetypes/{prop_id}?lang=all')
+        prop_info = req.json()
+        return prop_info
+
+    # ==================================================================================================================
+    # Function that Returns the Name of the property
+    # Gets the json of the property and the property id as parameter
+    def prop_name(self, prop_id, prop_json):
+        prop_name = ""
+
+        for properties in prop_json["restype_info"]["properties"]:
+            if properties["id"] == prop_id:
+                prop_name = properties["name"]
+
+        return prop_name
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that returns the super of the property
+    # Gets the json of the property, the property id and the supermap and objectmap as parameter
+    def prop_super(self, prop_id, prop_json, super_map, object_map):
+
+        for properties in prop_json["restype_info"]["properties"]:
+            if properties["id"] == prop_id:
+                if properties["vt_name"] is not super_map:
+                    return "hasValue"
+                else:
+                    return super_map[object_map[properties["vt_name"]]]
+
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that returns the object of the property
+    # Gets the json of the property, the property id and the supermap as parameter
+    def prop_object(self):
+        return
+
+    # -------------------------------------------------------------------------------------------------------------------
+    # Fills in the Labels of the property
+
+    # -------------------------------------------------------------------------------------------------------------------
+    # Fills in the comments of the property
+
+    # -------------------------------------------------------------------------------------------------------------------
+    # Fills in the gui_element of the property
+
+    # -------------------------------------------------------------------------------------------------------------------
+    # Fills in the gui_attributes of the property
 
     # ==================================================================================================================
     def fetchProperties(self, project):
@@ -287,6 +363,22 @@ class Converter:
             "": "seqnum"
         }  # Dict that maps the old the super corresponding to the object-type
 
+        #-----------------------------------------------------------------------------------
+        # Getting framework for the Properties section of the ontology
+        tmpOnto["project"]["ontologies"][0]["properties"].append({
+            "name": "",
+            "super": [],
+            "object": "",
+            "labels": {},
+            "comments": {},
+            "gui_element": "",
+            "gui_attributes": {}
+        })
+        #-----------------------------------------------------------------------------------
+
+
+        # TODO: ----------------------------------------------------------------------------
+
         hlist_node_mapping = {}
 
         req = requests.get(f'{self.serverpath}/api/selections/')
@@ -299,162 +391,8 @@ class Converter:
 
         for vocabularies in salsahJson.salsahVocabularies["vocabularies"]:
             if project["id"] == vocabularies["project_id"]:
-                payload: dict = {
-                    'vocabulary': vocabularies["shortname"],
-                    'lang': 'all'
-                }
-                req = requests.get(f'{self.serverpath}/api/resourcetypes/', params=payload)
-                resourcetypes = req.json()
 
-                controlList.clear()  # The list needs to be cleared for every project
-
-                # ---------------------
-
-                myResTypeInfo = {}
-                propertiesName = {}  # This dict will have the form: {PropertyId: Name of Prop}
-                for momResId in resourcetypes["resourcetypes"]:
-                    req = requests.get(
-                        f'{self.serverpath}/api/resourcetypes/{momResId["id"]}?lang=all')
-                    resType = req.json()
-
-                    for propId in resType["restype_info"]["properties"]:
-                        if "id" in propId:
-                            propertiesName[propId["id"]] = propId["name"]
-
-                    myResTypeInfo[momResId["id"]] = resType["restype_info"]
-
-                # ---------------------
-
-                for momResId in resourcetypes["resourcetypes"]:
-                    for propertiesId in momResId["properties"]:
-                        # for labelId in propertiesId["label"]: - If you want for every language a single property
-                        if propertiesId["id"] in controlList:
-                            continue
-                        else:
-                            # Fill in the name of the property as well as getting the framework done
-                            tmpOnto["project"]["ontologies"][0]["properties"].append({
-                                "name": "",
-                                "super": [],
-                                "object": "",
-                                "labels": {},
-                                "comments": {},
-                                "gui_element": "",
-                                "gui_attributes": {}
-                            })
-                            for tempId in propertiesName:
-                                if propertiesId["id"] == tempId:
-                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = propertiesName[
-                                        tempId]
-                                    # pprint(tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"])
-                                    # tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = propertiesId["label"][0]["label"] - Old Version issue 11
-
-                            controlList.append(propertiesId["id"])
-
-                            # Fill in the labels of the properties - Its all the different language-names of the property
-                            for labelId in propertiesId["label"]:
-                                tmpOnto["project"]["ontologies"][0]["properties"][-1]["labels"].update({
-                                    labelId["shortname"]: labelId["label"]
-                                })
-                        # finding property name plus its id in order to fill in guiname
-                        for labelId in propertiesId["label"]:
-                            if labelId["label"] == propertiesId["label"][0]["label"]:
-                                propId = propertiesId["id"]
-
-                        req = requests.get(
-                            f'{self.serverpath}/api/resourcetypes/{momResId["id"]}?lang=all')
-                        resType = req.json()
-                        resTypeInfo = resType["restype_info"]
-
-                        for property in resTypeInfo["properties"]:
-                            if "id" in property and property["id"] == propId:
-                                # fill in the description of the properties as comments
-                                if property["description"] is not None and isinstance(property["description"], list):
-                                    for descriptionId in property["description"]:
-                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["comments"].update({
-                                            descriptionId["shortname"]: descriptionId["description"]
-                                        })
-
-                                # fill in gui_element
-                                tmpOnto["project"]["ontologies"][0]["properties"][-1]["gui_element"] = guiEleMap[
-                                    property["gui_name"]]  # fill in gui_element
-                                if "attributes" in property and property["attributes"] != "" and property[
-                                    "attributes"] is not None:  # fill in all gui_attributes
-                                    finalSplit = []
-                                    tmpstr = property["attributes"]
-                                    firstSplit = tmpstr.split(";")
-                                    for splits in firstSplit:
-                                        finalSplit.append(splits.split("="))
-
-                                    for numEle in range(len(
-                                            finalSplit)):  # instead of the list id, insert the name of the list via the id .replace("selection", "hlist")
-
-                                        if (finalSplit[numEle][0] == "selection" or finalSplit[numEle][
-                                            0] == "hlist"):  # here the selections-id's are comvertet into the name
-                                            for selectionId in selections:
-                                                if finalSplit[numEle][1] == selectionId["id"] and selectionId[
-                                                    "name"] != "":
-                                                    finalSplit[numEle][1] = selectionId["name"]
-
-                                            for hlistsId in hlists:
-                                                if finalSplit[numEle][1] == hlistsId["id"] and hlistsId["name"] != "":
-                                                    finalSplit[numEle][1] = hlistsId["name"]
-
-                                            finalSplit[numEle][0] = "hlist"
-
-                                        # convert gui attribute's string values to integers where necessary
-                                        if (finalSplit[numEle][0] == "size" or finalSplit[numEle][0] == "maxlength" or
-                                                finalSplit[numEle][0] == "numprops" or finalSplit[numEle][
-                                                    0] == "cols" or finalSplit[numEle][0] == "rows" or
-                                                finalSplit[numEle][0] == "min" or finalSplit[numEle][0] == "max"):
-                                            try:
-                                                finalSplit[numEle][1] = int(finalSplit[numEle][1])
-                                            except ValueError:
-                                                finalSplit[numEle][1] = finalSplit[numEle][1]
-
-                                        # fill in gui attributes (incl. hlists)
-                                        if finalSplit[numEle][0] == "size" and not isinstance(finalSplit[numEle][1],
-                                                                                              int) and '%' in \
-                                                finalSplit[numEle][1]:
-                                            tmpOnto["project"]["ontologies"][0]["properties"][-1][
-                                                "gui_attributes"].update({
-                                                finalSplit[numEle][0]: 250
-                                            })
-                                        else:
-                                            tmpOnto["project"]["ontologies"][0]["properties"][-1][
-                                                "gui_attributes"].update({
-                                                finalSplit[numEle][0]: finalSplit[numEle][1]
-                                            })
-
-                                tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = objectMap[
-                                    property["vt_name"]]  # fill in object
-
-                                if tmpOnto["project"]["ontologies"][0]["properties"][-1][
-                                    "object"] == "LinkValue":  # Determening ressource type of LinkValue (Bugfix)
-                                    kappa = ""
-                                    if property["attributes"] is not None:
-                                        attributes = property["attributes"].split(";")
-                                        for attribute in attributes:
-                                            kv = attribute.split("=")
-                                            if kv[0] == "restypeid":
-                                                kappa = kv[1]
-
-                                    if kappa == "":
-                                        tmpOnto["project"]["ontologies"][0]["properties"][-1][
-                                            "object"] = "** FILL IN BY HAND **"
-                                    elif kappa not in myResTypeInfo:
-                                        tmpOnto["project"]["ontologies"][0]["properties"][-1][
-                                            "object"] = "** FILL IN BY HAND (restypeid=0) **"
-
-                                    else:
-                                        tmpOnto["project"]["ontologies"][0]["properties"][-1]["object"] = \
-                                        myResTypeInfo[kappa]["name"]
-
-                                if objectMap[property[
-                                    "vt_name"]] is not superMap:  # fill in the super of the property. Default is "hasValue"
-                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"] = "hasValue"
-                                else:
-                                    tmpOnto["project"]["ontologies"][0]["properties"][-1]["super"] = superMap[
-                                        objectMap[property["vt_name"]]]
+        # TODO: ----------------------------------------------------------------------------
 
     # ==================================================================================================================
 
