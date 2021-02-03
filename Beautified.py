@@ -291,20 +291,68 @@ class Converter:
     #-------------------------------------------------------------------------------------------------------------------
     # Function that returns the object of the property
     # Gets the json of the property, the property id and the supermap as parameter
-    def prop_object(self):
-        return
+    def prop_object(self, prop_id, prop_json, object_map):
+
+        for properties in prop_json["restype_info"]["properties"]:
+            if properties["id"] == prop_id:
+                return object_map[properties["vt_name"]]
+
 
     # -------------------------------------------------------------------------------------------------------------------
-    # Fills in the Labels of the property
+    # Function that returns a list of dicts with all the <language: Label> of the property. Each label occurs only once
+    # Gets the json of the property and the property id as parameter
+    def prop_labels(self, prop_id, prop_json):
+        label_list = []
+
+        for properties in prop_json["restype_info"]["properties"]:
+            if properties["id"] == prop_id:
+                tmp_dict = {}
+
+                for labels in properties["label"]:
+                    tmp_dict.update({
+                        labels["shortname"]: labels["label"]
+                    })
+                    if tmp_dict not in label_list:
+                        label_list.append()
+
+        return label_list
 
     # -------------------------------------------------------------------------------------------------------------------
-    # Fills in the comments of the property
+    # Function that returns a list with all comments of the property
+    # Gets the json of the property and the property id as parameter
+    def prop_comments(self, prop_id, prop_json):
+        comments_list = []
+
+        for properties in prop_json["restype_info"]["properties"]:
+            if properties["id"] == prop_id:
+                tmp_dict = {}
+
+                for descriptions in properties["description"]:
+                    tmp_dict.update({
+                        descriptions["shortname"]: descriptions["description"]
+                    })
+                    if tmp_dict not in comments_list:
+                        comments_list.append()
+
+        return comments_list
 
     # -------------------------------------------------------------------------------------------------------------------
-    # Fills in the gui_element of the property
+    # Function that returns the gui_element of the property
+    # Gets the json of the property, the property id and the gui_element_map as parameter
+    def prop_gui_element(self, prop_id, prop_json, gui_element_map):
+
+        for properties in prop_json["restype_info"]["properties"]:
+            if properties["id"] == prop_id:
+                return gui_element_map[properties["gui_name"]]
 
     # -------------------------------------------------------------------------------------------------------------------
-    # Fills in the gui_attributes of the property
+    # Function that returns a list of the gui_attributes of the property
+    # Gets the json of the property and the property id as parameter
+    def prop_gui_attributes(self, prop_id, prop_json):
+
+        for properties in prop_json["restype_info"]["properties"]:
+            if properties["id"] == prop_id:
+                return
 
     # ==================================================================================================================
     def fetchProperties(self, project):
