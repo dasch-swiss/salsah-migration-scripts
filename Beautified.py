@@ -346,13 +346,28 @@ class Converter:
                 return gui_element_map[properties["gui_name"]]
 
     # -------------------------------------------------------------------------------------------------------------------
-    # Function that returns a list of the gui_attributes of the property
+    # Function that returns a dict of the gui_attributes of the property
     # Gets the json of the property and the property id as parameter
     def prop_gui_attributes(self, prop_id, prop_json):
+        attributes_dict = {}
 
         for properties in prop_json["restype_info"]["properties"]:
             if properties["id"] == prop_id:
-                return
+
+                attribute_type = ""
+                attribute_value = 0
+
+                attribute_string = properties["attributes"] #  A attributes_string might look like "size=60;maxlength=200"
+
+                comma_split = attribute_string.split(";") #  comma_split looks eg like: ["size"= 60, "maxlength"= 200]
+                for sub_splits in comma_split:
+                    attribute_type, attribute_value = sub_splits.split("=")
+
+                    attributes_dict.update({
+                        attribute_type: attribute_value
+                    })
+
+        return attributes_dict
 
     # ==================================================================================================================
     def fetchProperties(self, project):
@@ -425,22 +440,24 @@ class Converter:
         #-----------------------------------------------------------------------------------
 
 
-        # TODO: ----------------------------------------------------------------------------
+        # TODO: ----------------------------Assembly-------------------------------------
+        #
+        # hlist_node_mapping = {}
+        #
+        # req = requests.get(f'{self.serverpath}/api/selections/')
+        # result = req.json()
+        # selections = result["selections"]
+        #
+        # req2 = requests.get(f'{self.serverpath}/api/hlists/')
+        # result2 = req2.json()
+        # hlists = result2["hlists"]
+        #
+        # for vocabularies in salsahJson.salsahVocabularies["vocabularies"]:
+        #     if project["id"] == vocabularies["project_id"]:
 
-        hlist_node_mapping = {}
 
-        req = requests.get(f'{self.serverpath}/api/selections/')
-        result = req.json()
-        selections = result["selections"]
 
-        req2 = requests.get(f'{self.serverpath}/api/hlists/')
-        result2 = req2.json()
-        hlists = result2["hlists"]
-
-        for vocabularies in salsahJson.salsahVocabularies["vocabularies"]:
-            if project["id"] == vocabularies["project_id"]:
-
-        # TODO: ----------------------------------------------------------------------------
+        # TODO: ----------------------------Assembly-------------------------------------
 
     # ==================================================================================================================
 
@@ -494,5 +511,5 @@ if __name__ == '__main__':
         # pprint("FetchProperties")
         salsahJson.fetchProperties(projects)
         # Creating the new json files
-        f = open(projects["longname"] + ".json", 'w')
+        f = open("KAPPA" + projects["longname"] + ".json", 'w')
         f.write(json.dumps(tmpOnto, indent=4))
