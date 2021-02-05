@@ -230,7 +230,7 @@ class Converter:
     # ==================================================================================================================
     # The following functions are helper functions for "fetchProperties"
     # ==================================================================================================================
-    # Function that returns all the resource id's of a project.
+    # Function that returns a list of all the resource id's of a project.
     # It gets the json file of the resources of the current project as parameter.
     def res_ids(self, resource_types_json):
         project_resources_ids = []
@@ -247,7 +247,7 @@ class Converter:
         all_project_properties_ids = []
 
         for resource_type_id in resource_types_json["resourcetypes"]:
-            for property in resource_type_id:
+            for property in resource_type_id["properties"]:
                 if property["id"] not in all_project_properties_ids:
                     all_project_properties_ids.append(property["id"])
                 else:
@@ -440,24 +440,27 @@ class Converter:
         #-----------------------------------------------------------------------------------
 
 
-        # TODO: ----------------------------Assembly-------------------------------------
-        #
-        # hlist_node_mapping = {}
-        #
-        # req = requests.get(f'{self.serverpath}/api/selections/')
-        # result = req.json()
-        # selections = result["selections"]
-        #
-        # req2 = requests.get(f'{self.serverpath}/api/hlists/')
-        # result2 = req2.json()
-        # hlists = result2["hlists"]
-        #
-        # for vocabularies in salsahJson.salsahVocabularies["vocabularies"]:
-        #     if project["id"] == vocabularies["project_id"]:
+        # ----------------------------------Assembly-------------------------------------
 
+        req = requests.get(f'{self.serverpath}/api/resourcetypes/?vocabulary={project["shortname"]}&lang=all')
+        resource_json = req.json()
 
+        resource_ids = self.res_ids(resource_json)
+        property_ids = self.prop_ids(resource_json)
 
-        # TODO: ----------------------------Assembly-------------------------------------
+        testdict = {
+            "kappa": {
+                "gaga": 3
+            }
+        }
+
+        pprint(testdict["kappa"]["gaga"])
+        exit()
+
+        # TODO: Get a Dict with {property_id: info about property}
+        # will be a dict of dicts
+
+        # ----------------------------------Assembly-------------------------------------
 
     # ==================================================================================================================
 
