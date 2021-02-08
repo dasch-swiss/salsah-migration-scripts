@@ -2,7 +2,6 @@ import copy
 from pprint import pprint
 import requests
 import json
-from langdetect import detect
 from typing import List, Set, Dict, Tuple, Optional
 
 import time
@@ -24,10 +23,8 @@ class Converter:
             'https://raw.githubusercontent.com/dhlab-basel/dasch-ark-resolver-data/master/data/shortcodes.csv')
         self.salsahVocabularies = requests.get(f'{self.serverpath}/api/vocabularies').json()
 
-        # Testing stuff
-        # self.req = requests.get('https://www.salsah.org/api/resourcetypes/')
-        # result = self.req.json()
-        # pprint(result)
+        self.name_list = self.name_mapper()
+        self.name_list.update({"webern": "webern"})
 
     # ==================================================================================================================
     # Function that fills the shortname as well as the longname into the empty ontology. Uses https://www.salsah.org/api/projects for that
@@ -118,8 +115,6 @@ class Converter:
                     }, result_nodes['selection']))
                     selections_container.append(root)
 
-                    # pprint(selections_container)
-                    # time.sleep(15)
 
                 #
                 # now we get the hierarchical lists (hlists)
@@ -135,8 +130,6 @@ class Converter:
 
                 hlists = result['hlists']
 
-                # pprint(selections_container)
-                # time.sleep(15)
 
                 #
                 # this is a helper function for easy recursion
@@ -171,9 +164,6 @@ class Converter:
                     selections_container.append(root)
 
                 tmpOnto["project"]["lists"] = selections_container
-                # pprint(selections_container)
-                # pprint('==================================================================================================================')
-                # pprint('==================================================================================================================')
 
     # ==================================================================================================================
     # Function that fetches all the resources that correspond to a vocabulary/ontology
@@ -262,6 +252,62 @@ class Converter:
         req = requests.get(f'{self.serverpath}/api/resourcetypes/{prop_id}?lang=all')
         prop_info = req.json()
         return prop_info
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that returns a Dict with the form: {property_id: info about property}. It contains all property-information of one project.
+    # Gets the id of the property as parameter
+    def all_prop_info(self, all_project_resources_ids):
+        all_prop_dict = {}
+        resource_info = ""
+
+        for resource_id in all_project_resources_ids:
+            resource_info = self.prop_json(resource_id)
+
+
+            for property in resource_info["restype_info"]["properties"]:
+                if "id" in property:
+                    if property["id"] not in all_prop_dict:
+                        all_prop_dict.update({
+                            property["id"]: property
+                        })
+                    else:
+                        continue
+
+        return all_prop_dict
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that returns all resources of a given project
+    # It gets the json file of the resources of the current project as parameter.
+    def project_resources(self, resource_types_json):
+        all_project_resources_ids = []
+
+        for resource_type_id in resource_types_json["resourcetypes"]:
+            if resource_type_id["id"] not in all_project_resources_ids:
+                all_project_resources_ids.append(property["id"])
+            else:
+                continue
+
+        return all_project_resources_ids
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that returns a dict with a mapping of the names of the ontology that needs to be used in the get(url)
+    # Gets the current project id as parameter
+    def name_mapper(self):
+        name_map = {}
+        req = requests.get(f'{self.serverpath}/api/vocabularies')
+        vocabularies = req.json()
+
+        req = requests.get(f'{self.serverpath}/api/projects')
+        projects = req.json()
+
+
+        for vocabulary in vocabularies["vocabularies"]:
+            for project in projects["projects"]:
+                if vocabulary["id"] == project["id"]:
+                    name_map.update({
+                        project["shortname"]: vocabulary["shortname"]
+                    })
+        return name_map
 
     # ==================================================================================================================
     # Function that Returns the Name of the property
@@ -371,9 +417,6 @@ class Converter:
 
     # ==================================================================================================================
     def fetchProperties(self, project):
-        controlList = []  # List to identify dublicates of properties. We dont want dublicates in the properties list
-        propId = 0  # Is needed to save the property Id to get the guiElement
-        resId = 0  # Is needed to save the resource Id to get the guiElement
 
         guiEleMap = {
             "text": "SimpleText",
@@ -442,23 +485,15 @@ class Converter:
 
         # ----------------------------------Assembly-------------------------------------
 
-        req = requests.get(f'{self.serverpath}/api/resourcetypes/?vocabulary={project["shortname"]}&lang=all')
+        req = requests.get(f'{self.serverpath}/api/resourcetypes/?vocabulary={self.name_list[project["shortname"]]}&lang=all')
         resource_json = req.json()
 
         resource_ids = self.res_ids(resource_json)
         property_ids = self.prop_ids(resource_json)
 
-        testdict = {
-            "kappa": {
-                "gaga": 3
-            }
-        }
+        prop_info = self.all_prop_info(resource_ids) #  is the map {property_id: info}
 
-        pprint(testdict["kappa"]["gaga"])
-        exit()
-
-        # TODO: Get a Dict with {property_id: info about property}
-        # will be a dict of dicts
+        # TODO Next task is to start the assembly
 
         # ----------------------------------Assembly-------------------------------------
 
