@@ -238,7 +238,7 @@ class Converter:
 
         for resource_type_id in resource_types_json["resourcetypes"]:
             for property in resource_type_id["properties"]:
-                if property["id"] not in all_project_properties_ids:
+                if property["id"] not in all_project_properties_ids and int(property["id"]) != 153:
                     all_project_properties_ids.append(property["id"])
                 else:
                     continue
@@ -249,6 +249,7 @@ class Converter:
     # Function that returns the json of a given property-id. Used in almost all the subsequent functions as parameter
     # Gets the id of the property as parameter
     def prop_json(self, prop_id):
+        # pprint("Using Id: " + prop_id)
         req = requests.get(f'{self.serverpath}/api/resourcetypes/{prop_id}?lang=all')
         prop_info = req.json()
         return prop_info
@@ -258,9 +259,10 @@ class Converter:
     # Gets the id of the property as parameter
     def all_prop_info(self, all_project_resources_ids):
         all_prop_dict = {}
-        resource_info = ""
 
         for resource_id in all_project_resources_ids:
+            if int(resource_id) == 153: # Error in Database. resource with id 153 gives an error
+                continue
             resource_info = self.prop_json(resource_id)
 
 
@@ -310,58 +312,61 @@ class Converter:
         return name_map
 
     # ==================================================================================================================
-    # Function that Returns the Name of the property
-    # Gets the json of the property and the property id as parameter
-    def prop_name(self, prop_id, prop_json):
-        prop_name = ""
+    # Function that assembles the Name of the property as well as adding for each property id that is in the project the
+    # needed property fields
+    # Gets all the property id's of the project as well as the property infos from the function all_prop_info
+    def prop_name(self, property_ids, prop_info):
 
-        for properties in prop_json["restype_info"]["properties"]:
-            if properties["id"] == prop_id:
-                prop_name = properties["name"]
+        for property_id in property_ids:
+            # Getting framework for the Properties section of the ontology
+            tmpOnto["project"]["ontologies"][0]["properties"].append({
+                "name": "",
+                "super": [],
+                "object": "",
+                "labels": {},
+                "comments": {},
+                "gui_element": "",
+                "gui_attributes": {}
+            })
 
-        return prop_name
-
-    #-------------------------------------------------------------------------------------------------------------------
-    # Function that returns the super of the property
-    # Gets the json of the property, the property id and the supermap and objectmap as parameter
-    def prop_super(self, prop_id, prop_json, super_map, object_map):
-
-        for properties in prop_json["restype_info"]["properties"]:
-            if properties["id"] == prop_id:
-                if properties["vt_name"] is not super_map:
-                    return "hasValue"
-                else:
-                    return super_map[object_map[properties["vt_name"]]]
-
+            tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = prop_info[property_id]["name"]
 
     #-------------------------------------------------------------------------------------------------------------------
-    # Function that returns the object of the property
-    # Gets the json of the property, the property id and the supermap as parameter
-    def prop_object(self, prop_id, prop_json, object_map):
+    # Function that assembles the super of the property
+    # Gets the property infos from the function all_prop_info and the supermap and objectmap as parameter
+    def prop_super(self, prop_info, super_map, object_map):
 
-        for properties in prop_json["restype_info"]["properties"]:
-            if properties["id"] == prop_id:
-                return object_map[properties["vt_name"]]
+        for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
+            for specific_prop in prop_info:
+                if prop_info[specific_prop]["name"] == property_element["name"]:
+                    if prop_info[specific_prop]["vt_name"] is not super_map:
+                        property_element["super"] = "hasValue"
+                    else:
+                        property_element["super"] = super_map[object_map[prop_info[specific_prop]["vt_name"]]]
 
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that assembles the object of the property
+    # Gets the property infos from the function all_prop_info
+    def prop_object(self, prop_info, object_map):
+
+        for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
+            for specific_prop in prop_info:
+                if prop_info[specific_prop]["name"] == property_element["name"]:
+                    property_element["object"] = object_map[prop_info[specific_prop]["vt_name"]]
 
     # -------------------------------------------------------------------------------------------------------------------
-    # Function that returns a list of dicts with all the <language: Label> of the property. Each label occurs only once
-    # Gets the json of the property and the property id as parameter
-    def prop_labels(self, prop_id, prop_json):
-        label_list = []
+    # Function that assembles the labels of the property
+    # Gets the property infos from the function all_prop_info
+    def prop_labels(self, prop_info):
 
-        for properties in prop_json["restype_info"]["properties"]:
-            if properties["id"] == prop_id:
-                tmp_dict = {}
+        for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
+            for specific_prop in prop_info:
+                if prop_info[specific_prop]["name"] == property_element["name"]:
+                    for label in prop_info[specific_prop]["label"]:
+                        property_element["labels"].update({
+                            label["shortname"]: label["label"]
+                        })
 
-                for labels in properties["label"]:
-                    tmp_dict.update({
-                        labels["shortname"]: labels["label"]
-                    })
-                    if tmp_dict not in label_list:
-                        label_list.append()
-
-        return label_list
 
     # -------------------------------------------------------------------------------------------------------------------
     # Function that returns a list with all comments of the property
@@ -469,20 +474,6 @@ class Converter:
             "": "seqnum"
         }  # Dict that maps the old the super corresponding to the object-type
 
-        #-----------------------------------------------------------------------------------
-        # Getting framework for the Properties section of the ontology
-        tmpOnto["project"]["ontologies"][0]["properties"].append({
-            "name": "",
-            "super": [],
-            "object": "",
-            "labels": {},
-            "comments": {},
-            "gui_element": "",
-            "gui_attributes": {}
-        })
-        #-----------------------------------------------------------------------------------
-
-
         # ----------------------------------Assembly-------------------------------------
 
         req = requests.get(f'{self.serverpath}/api/resourcetypes/?vocabulary={self.name_list[project["shortname"]]}&lang=all')
@@ -490,10 +481,12 @@ class Converter:
 
         resource_ids = self.res_ids(resource_json)
         property_ids = self.prop_ids(resource_json)
+        prop_info = self.all_prop_info(resource_ids) #  is the map {property_id: info} with all the property_id's for 1 project.
 
-        prop_info = self.all_prop_info(resource_ids) #  is the map {property_id: info}
-
-        # TODO Next task is to start the assembly
+        self.prop_name(property_ids, prop_info)
+        self.prop_super(prop_info, superMap, objectMap)
+        self.prop_object(prop_info, objectMap)
+        self.prop_labels(prop_info)
 
         # ----------------------------------Assembly-------------------------------------
 
