@@ -320,7 +320,7 @@ class Converter:
         for property_id in property_ids:
             # Getting framework for the Properties section of the ontology
             tmpOnto["project"]["ontologies"][0]["properties"].append({
-                "name": "",
+                "name": prop_info[property_id]["name"],
                 "super": [],
                 "object": "",
                 "labels": {},
@@ -329,7 +329,7 @@ class Converter:
                 "gui_attributes": {}
             })
 
-            tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = prop_info[property_id]["name"]
+            #tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = prop_info[property_id]["name"]
 
     #-------------------------------------------------------------------------------------------------------------------
     # Function that assembles the super of the property
@@ -369,56 +369,75 @@ class Converter:
 
 
     # -------------------------------------------------------------------------------------------------------------------
-    # Function that returns a list with all comments of the property
-    # Gets the json of the property and the property id as parameter
-    def prop_comments(self, prop_id, prop_json):
-        comments_list = []
+    # Function that assembles all the comments of the property
+    # Gets the property infos from the function all_prop_info
+    def prop_comments(self, prop_info):
 
-        for properties in prop_json["restype_info"]["properties"]:
-            if properties["id"] == prop_id:
-                tmp_dict = {}
+        for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
+            for specific_prop in prop_info:
+                if prop_info[specific_prop]["name"] == property_element["name"]:
+                    if prop_info[specific_prop]["description"] is not None:
+                        for description in prop_info[specific_prop]["description"]:
+                            property_element["comments"].update({
+                                description["shortname"]: description["description"]
+                            })
 
-                for descriptions in properties["description"]:
-                    tmp_dict.update({
-                        descriptions["shortname"]: descriptions["description"]
-                    })
-                    if tmp_dict not in comments_list:
-                        comments_list.append()
-
-        return comments_list
 
     # -------------------------------------------------------------------------------------------------------------------
-    # Function that returns the gui_element of the property
-    # Gets the json of the property, the property id and the gui_element_map as parameter
-    def prop_gui_element(self, prop_id, prop_json, gui_element_map):
+    # Function that assembles the gui_element of the property
+    # Gets the property infos from the function all_prop_info as well as the gui_element_map
+    def prop_gui_element(self, prop_info, gui_element_map):
 
-        for properties in prop_json["restype_info"]["properties"]:
-            if properties["id"] == prop_id:
-                return gui_element_map[properties["gui_name"]]
+        for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
+            for specific_prop in prop_info:
+                if prop_info[specific_prop]["name"] == property_element["name"]:
+                    property_element["gui_element"] = gui_element_map[prop_info[specific_prop]["gui_name"]]
 
     # -------------------------------------------------------------------------------------------------------------------
-    # Function that returns a dict of the gui_attributes of the property
-    # Gets the json of the property and the property id as parameter
-    def prop_gui_attributes(self, prop_id, prop_json):
-        attributes_dict = {}
+    # Function that assembles the gui_attributes of the property
+    # Gets the property infos from the function all_prop_info
+    def prop_gui_attributes(self, prop_info):
+        # attributes_dict = {}
+        #
+        # for properties in prop_json["restype_info"]["properties"]:
+        #     if properties["id"] == prop_id:
+        #
+                # attribute_type = ""
+                # attribute_value = 0
+                #
+                # attribute_string = properties["attributes"] #  A attributes_string might look like "size=60;maxlength=200"
+                #
+                # comma_split = attribute_string.split(";") #  comma_split looks eg like: ["size"= 60, "maxlength"= 200]
+                # for sub_splits in comma_split:
+                #     attribute_type, attribute_value = sub_splits.split("=")
+                #
+                #     attributes_dict.update({
+                #         attribute_type: attribute_value
+                #     })
+        #
+        # return attributes_dict
 
-        for properties in prop_json["restype_info"]["properties"]:
-            if properties["id"] == prop_id:
+        # pprint(prop_info["1"]["attributes"])
+        # exit()
 
-                attribute_type = ""
-                attribute_value = 0
+        for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
+            for specific_prop in prop_info:
+                if prop_info[specific_prop]["name"] == property_element["name"] and prop_info[specific_prop]["attributes"] is not None and prop_info[specific_prop]["attributes"] != '':
+                    attribute_type = ""
+                    attribute_value = 0
 
-                attribute_string = properties["attributes"] #  A attributes_string might look like "size=60;maxlength=200"
+                    attribute_string = prop_info[specific_prop]["attributes"]  # A attributes_string might look like "size=60;maxlength=200"
+                    comma_split = attribute_string.split(";")  # comma_split looks eg like: ["size"= 60, "maxlength"= 200]
+                    for sub_splits in comma_split:
+                        attribute_type, attribute_value = sub_splits.split("=")
+                        if attribute_value.isdecimal():
+                            attribute_value = int(attribute_value)
+                        else:
+                            attribute_value = str(attribute_value)
 
-                comma_split = attribute_string.split(";") #  comma_split looks eg like: ["size"= 60, "maxlength"= 200]
-                for sub_splits in comma_split:
-                    attribute_type, attribute_value = sub_splits.split("=")
-
-                    attributes_dict.update({
-                        attribute_type: attribute_value
-                    })
-
-        return attributes_dict
+                        property_element["gui_attributes"].update({
+                            attribute_type: attribute_value
+                        })
 
     # ==================================================================================================================
     def fetchProperties(self, project):
@@ -487,6 +506,9 @@ class Converter:
         self.prop_super(prop_info, superMap, objectMap)
         self.prop_object(prop_info, objectMap)
         self.prop_labels(prop_info)
+        self.prop_comments(prop_info)
+        self.prop_gui_element(prop_info, guiEleMap)
+        self.prop_gui_attributes(prop_info)
 
         # ----------------------------------Assembly-------------------------------------
 
