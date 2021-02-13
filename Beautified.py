@@ -329,8 +329,6 @@ class Converter:
                 "gui_attributes": {}
             })
 
-            #tmpOnto["project"]["ontologies"][0]["properties"][-1]["name"] = prop_info[property_id]["name"]
-
     #-------------------------------------------------------------------------------------------------------------------
     # Function that assembles the super of the property
     # Gets the property infos from the function all_prop_info and the supermap and objectmap as parameter
@@ -353,6 +351,23 @@ class Converter:
             for specific_prop in prop_info:
                 if prop_info[specific_prop]["name"] == property_element["name"]:
                     property_element["object"] = object_map[prop_info[specific_prop]["vt_name"]]
+
+                    if property_element["object"] == "LinkValue":  # Determening ressource type of LinkValue (Bugfix)
+                        kappa = ""
+                        if prop_info[specific_prop]["attributes"] is not None:
+                            attributes = prop_info[specific_prop]["attributes"].split(";")
+                            for attribute in attributes:
+                                kv = attribute.split("=")
+                                if kv[0] == "restypeid":
+                                    kappa = kv[1]
+
+                        if kappa == "":
+                            property_element["object"] = "** FILL IN BY HAND **"
+                        elif kappa not in prop_info[specific_prop]:
+                            property_element["object"] = "** FILL IN BY HAND (restypeid=0) **"
+
+                        else:
+                            property_element["object"] = prop_info[specific_prop][kappa]["name"]
 
     # -------------------------------------------------------------------------------------------------------------------
     # Function that assembles the labels of the property
@@ -397,28 +412,6 @@ class Converter:
     # Function that assembles the gui_attributes of the property
     # Gets the property infos from the function all_prop_info
     def prop_gui_attributes(self, prop_info):
-        # attributes_dict = {}
-        #
-        # for properties in prop_json["restype_info"]["properties"]:
-        #     if properties["id"] == prop_id:
-        #
-                # attribute_type = ""
-                # attribute_value = 0
-                #
-                # attribute_string = properties["attributes"] #  A attributes_string might look like "size=60;maxlength=200"
-                #
-                # comma_split = attribute_string.split(";") #  comma_split looks eg like: ["size"= 60, "maxlength"= 200]
-                # for sub_splits in comma_split:
-                #     attribute_type, attribute_value = sub_splits.split("=")
-                #
-                #     attributes_dict.update({
-                #         attribute_type: attribute_value
-                #     })
-        #
-        # return attributes_dict
-
-        # pprint(prop_info["1"]["attributes"])
-        # exit()
 
         for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
             for specific_prop in prop_info:
