@@ -345,7 +345,7 @@ class Converter:
     #-------------------------------------------------------------------------------------------------------------------
     # Function that assembles the object of the property
     # Gets the property infos from the function all_prop_info
-    def prop_object(self, prop_info, object_map):
+    def prop_object(self, prop_info, resource_ids, object_map):
 
         for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
             for specific_prop in prop_info:
@@ -363,11 +363,14 @@ class Converter:
 
                         if kappa == "":
                             property_element["object"] = "** FILL IN BY HAND **"
-                        elif kappa not in prop_info[specific_prop]:
+                        elif kappa not in resource_ids:
                             property_element["object"] = "** FILL IN BY HAND (restypeid=0) **"
 
                         else:
-                            property_element["object"] = prop_info[specific_prop][kappa]["name"]
+                            req = requests.get(
+                                f'{self.serverpath}/api/resourcetypes/{kappa}?lang=all')
+                            resType = req.json()
+                            property_element["object"] = resType["restype_info"]["name"]
 
     # -------------------------------------------------------------------------------------------------------------------
     # Function that assembles the labels of the property
@@ -497,7 +500,7 @@ class Converter:
 
         self.prop_name(property_ids, prop_info)
         self.prop_super(prop_info, superMap, objectMap)
-        self.prop_object(prop_info, objectMap)
+        self.prop_object(prop_info, resource_ids, objectMap)
         self.prop_labels(prop_info)
         self.prop_comments(prop_info)
         self.prop_gui_element(prop_info, guiEleMap)
