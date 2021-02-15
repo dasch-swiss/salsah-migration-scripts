@@ -367,21 +367,21 @@ class Converter:
 
                     # From here on: special case treatment!
                     if property_element["object"] == "LinkValue":  # Determening ressource type of LinkValue (Bugfix)
-                        kappa = ""
+                        resource_type_id = ""
                         if prop_info[specific_prop]["attributes"] is not None:
                             attributes = prop_info[specific_prop]["attributes"].split(";")
                             for attribute in attributes:
                                 kv = attribute.split("=")
                                 if kv[0] == "restypeid":
-                                    kappa = kv[1]
+                                    resource_type_id = kv[1]
 
-                        if kappa == "":
+                        if resource_type_id == "":
                             property_element["object"] = "** FILL IN BY HAND **"
-                        elif kappa not in resource_ids:
+                        elif resource_type_id not in resource_ids:
                             property_element["object"] = "** FILL IN BY HAND (restypeid=0) **"
 
                         else:
-                            property_element["object"] = recource_names[kappa]
+                            property_element["object"] = recource_names[resource_type_id]
 
     # -------------------------------------------------------------------------------------------------------------------
     # Function that assembles the labels of the property
