@@ -506,13 +506,13 @@ class Converter:
         resource_json = req.json()
 
         resource_ids = self.res_ids(resource_json)
-        recource_names = self.resource_name(resource_ids)
+        resource_names = self.resource_name(resource_ids)
         property_ids = self.prop_ids(resource_json)
         prop_info = self.all_prop_info(resource_ids) #  is the map {property_id: info} with all the property_id's for 1 project.
 
         self.prop_name(property_ids, prop_info)
         self.prop_super(prop_info, superMap, objectMap)
-        self.prop_object(prop_info, resource_ids, recource_names, objectMap)
+        self.prop_object(prop_info, resource_ids, resource_names, objectMap)
         self.prop_labels(prop_info)
         self.prop_comments(prop_info)
         self.prop_gui_element(prop_info, guiEleMap)
