@@ -246,13 +246,12 @@ class Converter:
         return all_project_properties_ids
 
     #-------------------------------------------------------------------------------------------------------------------
-    # Function that returns the json of a given property-id. Used in almost all the subsequent functions as parameter
+    # Function that returns the json of a given resource-id.
     # Gets the id of the property as parameter
-    def prop_json(self, prop_id):
-        # pprint("Using Id: " + prop_id)
-        req = requests.get(f'{self.serverpath}/api/resourcetypes/{prop_id}?lang=all')
-        prop_info = req.json()
-        return prop_info
+    def resource_json(self, resource_id):
+        req = requests.get(f'{self.serverpath}/api/resourcetypes/{resource_id}?lang=all')
+        resource_info = req.json()
+        return resource_info
 
     #-------------------------------------------------------------------------------------------------------------------
     # Function that returns a Dict with the form: {property_id: info about property}. It contains all property-information of one project.
@@ -263,7 +262,7 @@ class Converter:
         for resource_id in all_project_resources_ids:
             if int(resource_id) == 153: # Error in Database. resource with id 153 gives an error
                 continue
-            resource_info = self.prop_json(resource_id)
+            resource_info = self.resource_json(resource_id)
 
 
             for property in resource_info["restype_info"]["properties"]:
@@ -310,7 +309,21 @@ class Converter:
                         project["shortname"]: vocabulary["shortname"]
                     })
         return name_map
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that returns a dict with all the resource-ids and the corresponding name {resource_id: resource_name}
+    # Gets the current project id as parameter
+    def resource_name(self, resource_ids):
+        resource_name_dict = {}
 
+        for resource_id in resource_ids:
+            if int(resource_id) == 153: # Error in Database. resource with id 153 gives an error
+                continue
+            resource_info = self.resource_json(resource_id)
+            resource_name_dict.update({
+                resource_id: resource_info["restype_info"]["name"]
+            })
+
+        return resource_name_dict
     # ==================================================================================================================
     # Function that assembles the Name of the property as well as adding for each property id that is in the project the
     # needed property fields
@@ -345,13 +358,14 @@ class Converter:
     #-------------------------------------------------------------------------------------------------------------------
     # Function that assembles the object of the property
     # Gets the property infos from the function all_prop_info
-    def prop_object(self, prop_info, resource_ids, object_map):
+    def prop_object(self, prop_info, resource_ids, recource_names, object_map):
 
         for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
             for specific_prop in prop_info:
                 if prop_info[specific_prop]["name"] == property_element["name"]:
                     property_element["object"] = object_map[prop_info[specific_prop]["vt_name"]]
 
+                    # From here on: special case treatment!
                     if property_element["object"] == "LinkValue":  # Determening ressource type of LinkValue (Bugfix)
                         kappa = ""
                         if prop_info[specific_prop]["attributes"] is not None:
@@ -367,10 +381,7 @@ class Converter:
                             property_element["object"] = "** FILL IN BY HAND (restypeid=0) **"
 
                         else:
-                            req = requests.get(
-                                f'{self.serverpath}/api/resourcetypes/{kappa}?lang=all')
-                            resType = req.json()
-                            property_element["object"] = resType["restype_info"]["name"]
+                            property_element["object"] = recource_names[kappa]
 
     # -------------------------------------------------------------------------------------------------------------------
     # Function that assembles the labels of the property
@@ -495,12 +506,13 @@ class Converter:
         resource_json = req.json()
 
         resource_ids = self.res_ids(resource_json)
+        recource_names = self.resource_name(resource_ids)
         property_ids = self.prop_ids(resource_json)
         prop_info = self.all_prop_info(resource_ids) #  is the map {property_id: info} with all the property_id's for 1 project.
 
         self.prop_name(property_ids, prop_info)
         self.prop_super(prop_info, superMap, objectMap)
-        self.prop_object(prop_info, resource_ids, objectMap)
+        self.prop_object(prop_info, resource_ids, recource_names, objectMap)
         self.prop_labels(prop_info)
         self.prop_comments(prop_info)
         self.prop_gui_element(prop_info, guiEleMap)
