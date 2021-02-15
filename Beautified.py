@@ -310,8 +310,8 @@ class Converter:
                     })
         return name_map
     #-------------------------------------------------------------------------------------------------------------------
-    # Function that returns a dict with all the resource-ids and the corresponding name {resource_id: resource_name}
-    # Gets the current project id as parameter
+    # Function that returns a dict with all the resource-ids and the corresponding name {resource_id: resource_name} for the whole project
+    # Gets all the resource id's of the project as parameter
     def resource_name(self, resource_ids):
         resource_name_dict = {}
 
