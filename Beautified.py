@@ -256,16 +256,11 @@ class Converter:
     #-------------------------------------------------------------------------------------------------------------------
     # Function that returns a Dict with the form: {property_id: info about property}. It contains all property-information of one project.
     # Gets the id of the property as parameter
-    def all_prop_info(self, all_project_resources_ids):
+    def all_prop_info(self, resource_info):
         all_prop_dict = {}
 
-        for resource_id in all_project_resources_ids:
-            if int(resource_id) == 153: # Error in Database. resource with id 153 gives an error
-                continue
-            resource_info = self.resource_json(resource_id)
-
-
-            for property in resource_info["restype_info"]["properties"]:
+        for resource in resource_info:
+            for property in resource_info[resource]["properties"]:
                 if "id" in property:
                     if property["id"] not in all_prop_dict:
                         all_prop_dict.update({
@@ -312,18 +307,29 @@ class Converter:
     #-------------------------------------------------------------------------------------------------------------------
     # Function that returns a dict with all the resource-ids and the corresponding name {resource_id: resource_name} for the whole project
     # Gets all the resource id's of the project as parameter
-    def resource_name(self, resource_ids):
+    def resource_name(self, resource_info):
         resource_name_dict = {}
 
-        for resource_id in resource_ids:
-            if int(resource_id) == 153: # Error in Database. resource with id 153 gives an error
-                continue
-            resource_info = self.resource_json(resource_id)
+        for resource_id in resource_info:
             resource_name_dict.update({
-                resource_id: resource_info["restype_info"]["name"]
+                resource_id: resource_info[resource_id]["name"]
             })
 
         return resource_name_dict
+    #-------------------------------------------------------------------------------------------------------------------
+    # Function that returns a dict with all the resource-information {resource_id: resource_info} for the whole project
+    # Gets all the resource id's of the project as parameter
+    def resource_info(self, resource_ids):
+
+        myResTypeInfo = {}
+        for momResId in resource_ids:
+            if int(momResId) == 153:
+                continue# Error in Database. resource with id 153 gives an error
+            resType = self.resource_json(momResId)
+            myResTypeInfo[momResId] = resType["restype_info"]
+
+        return myResTypeInfo
+
     # ==================================================================================================================
     # Function that assembles the Name of the property as well as adding for each property id that is in the project the
     # needed property fields
@@ -506,9 +512,10 @@ class Converter:
         resource_json = req.json()
 
         resource_ids = self.res_ids(resource_json)
-        resource_names = self.resource_name(resource_ids)
+        resource_info = self.resource_info(resource_ids)
+        resource_names = self.resource_name(resource_info)
         property_ids = self.prop_ids(resource_json)
-        prop_info = self.all_prop_info(resource_ids) #  is the map {property_id: info} with all the property_id's for 1 project.
+        prop_info = self.all_prop_info(resource_info) #  is the map {property_id: info} with all the property_id's for 1 project.
 
         self.prop_name(property_ids, prop_info)
         self.prop_super(prop_info, superMap, objectMap)
