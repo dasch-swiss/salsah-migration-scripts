@@ -272,20 +272,6 @@ class Converter:
         return all_prop_dict
 
     #-------------------------------------------------------------------------------------------------------------------
-    # Function that returns all resources of a given project
-    # It gets the json file of the resources of the current project as parameter.
-    def project_resources(self, resource_types_json):
-        all_project_resources_ids = []
-
-        for resource_type_id in resource_types_json["resourcetypes"]:
-            if resource_type_id["id"] not in all_project_resources_ids:
-                all_project_resources_ids.append(property["id"])
-            else:
-                continue
-
-        return all_project_resources_ids
-
-    #-------------------------------------------------------------------------------------------------------------------
     # Function that returns a dict with a mapping of the names of the ontology that needs to be used in the get(url)
     # Gets the current project id as parameter
     def name_mapper(self):
