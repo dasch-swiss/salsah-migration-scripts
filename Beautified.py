@@ -343,9 +343,9 @@ class Converter:
             for specific_prop in prop_info:
                 if prop_info[specific_prop]["name"] == property_element["name"]:
                     if prop_info[specific_prop]["vt_name"] is not super_map:
-                        property_element["super"] = "hasValue"
+                        property_element["super"] = ["hasValue"]
                     else:
-                        property_element["super"] = super_map[object_map[prop_info[specific_prop]["vt_name"]]]
+                        property_element["super"] = [super_map[object_map[prop_info[specific_prop]["vt_name"]]]]
 
     #-------------------------------------------------------------------------------------------------------------------
     # Function that assembles the object of the property
@@ -419,6 +419,16 @@ class Converter:
     # Gets the property infos from the function all_prop_info
     def prop_gui_attributes(self, prop_info):
 
+        req = requests.get(f'{self.serverpath}/api/hlists/')
+        result = req.json()
+        hlists = result["hlists"]
+
+        req = requests.get(f'{self.serverpath}/api/selections/')
+        result = req.json()
+        selections = result["selections"]
+
+
+
         for property_element in tmpOnto["project"]["ontologies"][0]["properties"]:
             for specific_prop in prop_info:
                 if prop_info[specific_prop]["name"] == property_element["name"] and prop_info[specific_prop]["attributes"] is not None and prop_info[specific_prop]["attributes"] != '':
@@ -429,7 +439,24 @@ class Converter:
                     comma_split = attribute_string.split(";")  # comma_split looks eg like: ["size"= 60, "maxlength"= 200]
                     for sub_splits in comma_split:
                         attribute_type, attribute_value = sub_splits.split("=")
-                        if attribute_value.isdecimal():
+
+                        # here the selections-id's are comvertet into the name
+                        if (attribute_type == "selection" or attribute_type == "hlist"):
+                            for selectionId in selections:
+                                if attribute_value == selectionId["id"] and selectionId["name"] != "":
+                                    attribute_value = selectionId["name"]
+
+                            for hlistsId in hlists:
+                                if attribute_value == hlistsId["id"] and hlistsId["name"] != "":
+                                    attribute_value = hlistsId["name"]
+                            attribute_type = "hlist"
+
+                        # convert gui attribute's string values to integers where necessary
+                        if attribute_value[0] in ('-', '+'):
+                            temp_val = attribute_value[1:]
+                            if temp_val.isdecimal():
+                                attribute_value = int(attribute_value)
+                        elif attribute_value.isdecimal():
                             attribute_value = int(attribute_value)
                         else:
                             attribute_value = str(attribute_value)
