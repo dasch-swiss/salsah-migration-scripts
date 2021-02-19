@@ -47,7 +47,7 @@ class Converter:
     def fillDesc(self, project):
         for vocabularies in salsahJson.salsahVocabularies["vocabularies"]:
             if vocabularies["description"] and vocabularies["shortname"].lower() == project["shortname"].lower():
-                tmpOnto["project"]["descriptions"] = vocabularies["description"]
+                tmpOnto["project"]["descriptions"] = {"en": vocabularies["description"]}
 
     # ==================================================================================================================
     # Fill in the vocabulary name and label
@@ -96,6 +96,8 @@ class Converter:
 
                 for selection in selections:
                     self.selection_mapping[selection['id']] = selection['name']
+                    # if isinstance(dict, selection['label']):
+                    #     pass
                     root = {
                         'name': selection['name'],
                         'labels': dict(map(lambda a: (a['shortname'], a['label']), selection['label']))
@@ -186,16 +188,34 @@ class Converter:
 
                 # Here we type in the "name"
                 for momResId in resourcetypes["resourcetypes"]:
+
+                    # fetch restype_info
+                    req = requests.get('https://salsah.org/api/resourcetypes/{}?lang=all'.format(momResId["id"]))
+                    resType = req.json()
+                    resTypeInfo = resType["restype_info"]
+
+                    # fill in the name
+                    nameSplit = resTypeInfo["name"].split(":")
+                    #tmpOnto["project"]["ontologies"][0]["resources"][-1]["name"] = nameSplit[1]
+
                     tmpOnto["project"]["ontologies"][0]["resources"].append({
-                        "name": momResId["label"][0]["label"],
+                        "name": nameSplit[1],
                         "super": "",
                         "labels": {},
                         "cardinalities": []
                     })
+
+                    # labels should also be taken from resTypeInfo
+                    # fill in the labels
+                    if resTypeInfo["label"] is not None and isinstance(resTypeInfo["label"], list):
+                        for label in resTypeInfo["label"]:
+                            tmpOnto["project"]["ontologies"][0]["resources"][-1]["labels"].update(
+                                {label["shortname"]: label["label"]})
+
                     # Here we fill in the labels
-                    for label in momResId["label"]:
-                        tmpOnto["project"]["ontologies"][0]["resources"][-1]["labels"].update(
-                            {label["shortname"]: label["label"]})
+                    # for label in momResId["label"]:
+                    #     tmpOnto["project"]["ontologies"][0]["resources"][-1]["labels"].update(
+                    #         {label["shortname"]: label["label"]})
                     # Here we fill in the cardinalities
                     req = requests.get(f'{self.serverpath}/api/resourcetypes/{momResId["id"]}?lang=all')
                     resType = req.json()
