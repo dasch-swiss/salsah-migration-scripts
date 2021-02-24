@@ -10,8 +10,8 @@ import time
 class Converter:
 
     def __init__(self):
-        self.serverpath: str = "https://www.salsah.org"
-        # self.serverpath: str = "http://salsahv1.unil.ch"
+        # self.serverpath: str = "https://www.salsah.org"
+        self.serverpath: str = "http://salsahv1.unil.ch"
         self.selection_mapping: Dict[str, str] = {}
         self.selection_node_mapping: Dict[str, str] = {}
         self.hlist_node_mapping: Dict[str, str] = {}
@@ -96,25 +96,47 @@ class Converter:
 
                 for selection in selections:
                     self.selection_mapping[selection['id']] = selection['name']
-                    # if isinstance(dict, selection['label']):
-                    #     pass
-                    root = {
-                        'name': selection['name'],
-                        'labels': dict(map(lambda a: (a['shortname'], a['label']), selection['label']))
-                    }
+
+                    # filtering for Dylan special cases
+                    if isinstance(selection['label'], list):
+                        root = {
+                            'name': selection['name'],
+                            'labels': dict(map(lambda a: (a['shortname'], a['label']), selection['label']))
+                        }
+                    else:
+                        root = {
+                            'name': selection['name'],
+                            'label': {'en': selection['label']}
+                        }
+
+
                     if selection.get('description') is not None:
-                        root['comments'] = dict(
-                            map(lambda a: (a['shortname'], a['description']), selection['description']))
+                        if isinstance(selection['description'], list):
+                            root['comments'] = dict(
+                                map(lambda a: (a['shortname'], a['description']), selection['description']))
+                        else: #  For Dylan i set 'en' as the default language (Language info is missing -> just plug in a default)
+                            root['comments'] = {
+                                'en': selection['description']
+                            }
+
+
                     payload = {'lang': 'all'}
                     req_nodes = requests.get(f'{self.serverpath}/api/selections/' + selection['id'], params=payload)
                     result_nodes = req_nodes.json()
 
-                    self.selection_node_mapping.update(
-                        dict(map(lambda a: (a['id'], a['name']), result_nodes['selection'])))
-                    root['nodes'] = list(map(lambda a: {
-                        'name': 'S_' + a['id'],
-                        'labels': a['label']
-                    }, result_nodes['selection']))
+
+                    if 'selection' in result_nodes:
+                        if not isinstance(result_nodes["selection"][0]["label"], dict):
+                            self.selection_node_mapping.update(dict(map(lambda a: (a['id'], a['name']), result_nodes['selection'])))
+                            root['nodes'] = list(map(lambda a: {'name': 'S_' + a['id'],'labels': {'en': a['label']}}, result_nodes['selection']))
+
+                        else:
+                            self.selection_node_mapping.update(dict(map(lambda a: (a['id'], a['name']), result_nodes['selection'])))
+                            root['nodes'] = list(map(lambda a: {
+                                'name': 'S_' + a['id'],
+                                'labels': a['label']
+                            }, result_nodes['selection']))
+
                     selections_container.append(root)
 
 
@@ -140,20 +162,38 @@ class Converter:
                     newnodes = []
                     for node in children:
                         self.hlist_node_mapping[node['id']] = node['name']
-                        newnode = {
-                            'name': 'H_' + node['id'],
-                            'labels': dict(map(lambda a: (a['shortname'], a['label']), node['label']))
-                        }
+                        if isinstance(node['label'], list):
+                            newnode = {
+                                'name': 'H_' + node['id'],
+                                'labels': dict(map(lambda a: (a['shortname'], a['label']), node['label']))
+                            }
+                        else:
+                            newnode = {
+                                'name': 'H_' + node['id'],
+                                'label': {
+                                    'en': node['label']
+                                }
+                            }
+
                         if node.get('children') is not None:
                             newnode['nodes'] = process_children(node['children'])
                         newnodes.append(newnode)
                     return newnodes
 
                 for hlist in hlists:
-                    root = {
-                        'name': hlist['name'],
-                        'labels': dict(map(lambda a: (a['shortname'], a['label']), hlist['label']))
-                    }
+                    if 'label' in hlist:
+                        root = {
+                            'name': hlist['name'],
+                            'labels': dict(map(lambda a: (a['shortname'], a['label']), hlist['label']))
+                        }
+                    else:
+                        root = {
+                            'name': hlist['name'],
+                            'label': {
+                                'en': hlist['longname']
+                            }
+                        }
+
                     self.hlist_mapping[hlist['id']] = hlist['name']
                     if hlist.get('description') is not None:
                         root['comments'] = dict(
@@ -190,6 +230,9 @@ class Converter:
                 for momResId in resourcetypes["resourcetypes"]:
 
                     # fetch restype_info
+                    if momResId["id"] == '61' or momResId["id"] == '62' or momResId["id"] == '63' or momResId["id"] == '3' or momResId["id"] == '4' \
+                            or momResId["id"] == '8' or momResId["id"] == '9' or momResId["id"] == '14' or momResId["id"] == '15': # filtering for missing resid's in dylan
+                        continue
                     req = requests.get('https://salsah.org/api/resourcetypes/{}?lang=all'.format(momResId["id"]))
                     resType = req.json()
                     resTypeInfo = resType["restype_info"]
@@ -224,9 +267,11 @@ class Converter:
                     # if resTypeInfo["class"] not in superMap: #  here we fill in our superMap
                     #     pprint(resTypeInfo["class"])
                     #     exit()
-
-                    tmpOnto["project"]["ontologies"][0]["resources"][-1]["super"] = superMap[
-                        resTypeInfo["class"]]  # Fill in the super of the ressource
+                    if 'class' in resTypeInfo:
+                        tmpOnto["project"]["ontologies"][0]["resources"][-1]["super"] = superMap[
+                            resTypeInfo["class"]]  # Fill in the super of the ressource
+                    else:
+                        tmpOnto["project"]["ontologies"][0]["resources"][-1]["super"] = "Needs to be filled out by hand. Information could not be found in database"
 
                     for propertyId in resTypeInfo["properties"]:
                         tmpOnto["project"]["ontologies"][0]["resources"][-1]["cardinalities"].append({
@@ -305,7 +350,7 @@ class Converter:
 
         for vocabulary in vocabularies["vocabularies"]:
             for project in projects["projects"]:
-                if vocabulary["id"] == project["id"]:
+                if vocabulary["project_id"] == project["id"]:
                     name_map.update({
                         project["shortname"]: vocabulary["shortname"]
                     })
@@ -404,9 +449,15 @@ class Converter:
             for specific_prop in prop_info:
                 if prop_info[specific_prop]["name"] == property_element["name"]:
                     for label in prop_info[specific_prop]["label"]:
-                        property_element["labels"].update({
-                            label["shortname"]: label["label"]
-                        })
+                        if 'shortname' in label:
+                            property_element["labels"].update({
+                                label["shortname"]: label["label"]
+                            })
+                        else:
+                            property_element["labels"].update({
+                                'en': label
+                            })
+
 
 
     # -------------------------------------------------------------------------------------------------------------------
@@ -419,9 +470,14 @@ class Converter:
                 if prop_info[specific_prop]["name"] == property_element["name"]:
                     if prop_info[specific_prop]["description"] is not None:
                         for description in prop_info[specific_prop]["description"]:
-                            property_element["comments"].update({
-                                description["shortname"]: description["description"]
-                            })
+                            if 'shortname' in description:
+                                property_element["comments"].update({
+                                    description["shortname"]: description["description"]
+                                })
+                            else:
+                                property_element["comments"].update({
+                                    'en': description
+                                })
 
 
     # -------------------------------------------------------------------------------------------------------------------
@@ -492,9 +548,9 @@ class Converter:
             "text": "SimpleText",
             "textarea": "Textarea",
             "richtext": "Richtext",
-            "": "Colorpicker",
+            "colorpicker": "Colorpicker",
             "date": "Date",
-            "": "Slider",
+            "slider": "Slider",
             "geoname": "Geonames",
             "spinbox": "Spinbox",
             "": "Checkbox",
@@ -504,7 +560,8 @@ class Converter:
             "hlist": "Pulldown",
             "searchbox": "Searchbox",
             "interval": "IntervalValue",
-            "fileupload": "__FILEUPLOAD__"
+            "fileupload": "__FILEUPLOAD__",
+            "geometry": "Fill in ba hand" # dylan spezifisch
 
         }  # Dict that maps the old guiname from salsa to the new guielement from knorapy
 
@@ -512,7 +569,7 @@ class Converter:
             "Text": "TextValue",
             "Richtext": "TextValue",
             "Iconclass": "TextValue",
-            "": "ColorValue",
+            "Color": "ColorValue",
             "Date": "DateValue",
             "Time": "TimeValue",
             "Floating point number": "DecimalValue",
@@ -524,7 +581,8 @@ class Converter:
             "": "IntervalValue",
             "Selection": "ListValue",
             "Hierarchical list": "ListValue",
-            "Resource pointer": "LinkValue"
+            "Resource pointer": "LinkValue",
+            "Geometry": "Fill in by Hand" # Dylan spezifisch...
         }  # Dict that maps the old vt-name from salsa to the new Object type from knorapy
         # TODO right mapping from object map to super map
         superMap = {
