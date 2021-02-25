@@ -10,8 +10,8 @@ import time
 class Converter:
 
     def __init__(self):
-        self.serverpath: str = "https://www.salsah.org"
-        # self.serverpath: str = "http://salsahv1.unil.ch"
+        # self.serverpath: str = "https://www.salsah.org"
+        self.serverpath: str = "http://salsahv1.unil.ch"
         self.selection_mapping: Dict[str, str] = {}
         self.selection_node_mapping: Dict[str, str] = {}
         self.hlist_node_mapping: Dict[str, str] = {}
@@ -455,10 +455,9 @@ class Converter:
                             })
                         else:
                             property_element["labels"].update({
-                                'en': label
+                                'en': prop_info[specific_prop]["label"]
                             })
-
-
+                            break
 
     # -------------------------------------------------------------------------------------------------------------------
     # Function that assembles all the comments of the property
