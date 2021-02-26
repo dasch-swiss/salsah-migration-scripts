@@ -10,8 +10,8 @@ import time
 class Converter:
 
     def __init__(self):
-        self.serverpath: str = "https://www.salsah.org"
-        # self.serverpath: str = "http://salsahv1.unil.ch"
+        # self.serverpath: str = "https://www.salsah.org"
+        self.serverpath: str = "http://salsahv1.unil.ch"
         self.selection_mapping: Dict[str, str] = {}
         self.selection_node_mapping: Dict[str, str] = {}
         self.hlist_node_mapping: Dict[str, str] = {}
@@ -670,5 +670,5 @@ if __name__ == '__main__':
         # pprint("FetchProperties")
         salsahJson.fetchProperties(projects)
         # Creating the new json files
-        f = open("KAPPA" + projects["longname"] + ".json", 'w')
+        f = open(projects["longname"] + ".json", 'w')
         f.write(json.dumps(tmpOnto, indent=4))
