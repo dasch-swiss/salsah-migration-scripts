@@ -41,6 +41,7 @@ class Converter:
             if len(parts) > 1 and parts[1] == project["shortname"]:
                 tmpOnto["project"]["shortcode"] = parts[0]
                 # print('Found Knora project shortcode "{}" for "{}"!'.format(shortcode, parts[1]))
+                break
 
     # ==================================================================================================================
     # Fill the description - if present - into the empty ontology
