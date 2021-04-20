@@ -107,7 +107,7 @@ class Converter:
                     else:
                         root = {
                             'name': selection['name'],
-                            'label': {'en': selection['label']}
+                            'labels': {'en': selection['label']}
                         }
 
 
@@ -171,7 +171,7 @@ class Converter:
                         else:
                             newnode = {
                                 'name': 'H_' + node['id'],
-                                'label': {
+                                'labels': {
                                     'en': node['label']
                                 }
                             }
@@ -190,7 +190,7 @@ class Converter:
                     else:
                         root = {
                             'name': hlist['name'],
-                            'label': {
+                            'labels': {
                                 'en': hlist['longname']
                             }
                         }
