@@ -41,6 +41,7 @@ class Converter:
             if len(parts) > 1 and parts[1] == project["shortname"]:
                 tmpOnto["project"]["shortcode"] = parts[0]
                 # print('Found Knora project shortcode "{}" for "{}"!'.format(shortcode, parts[1]))
+                break
 
     # ==================================================================================================================
     # Fill the description - if present - into the empty ontology
@@ -106,7 +107,7 @@ class Converter:
                     else:
                         root = {
                             'name': selection['name'],
-                            'label': {'en': selection['label']}
+                            'labels': {'en': selection['label']}
                         }
 
 
@@ -170,7 +171,7 @@ class Converter:
                         else:
                             newnode = {
                                 'name': 'H_' + node['id'],
-                                'label': {
+                                'labels': {
                                     'en': node['label']
                                 }
                             }
@@ -189,7 +190,7 @@ class Converter:
                     else:
                         root = {
                             'name': hlist['name'],
-                            'label': {
+                            'labels': {
                                 'en': hlist['longname']
                             }
                         }
